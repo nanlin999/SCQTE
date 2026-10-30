@@ -2,8 +2,6 @@
 scqte_conditional <- function(data, sizes, tau,
                               h = scqte_bandwidth(nrow(data)),
                               compute_intervals = TRUE) {
-  scqte_validate(data, sizes, tau)
-  if (!is.finite(h) || h <= 0) stop("h must be positive.")
   # The treatment coefficient is the conditional QTE in this linear model.
   X <- cbind(1, data$x1, data$x2, data$A)
   Y <- data$Y

@@ -58,13 +58,6 @@ scqte_truth_at_nodes <- function(covariates, error, sizes, taus, n_nodes) {
 # Return the difference between the two marginal potential-outcome quantiles.
 scqte_population_qte <- function(covariates, error, sizes, taus,
                                   tolerance = 2e-6) {
-  if (!covariates %in% c("uniform", "shift") ||
-      !error %in% c("normal", "pareto") ||
-      !is.numeric(sizes) || length(sizes) < 2L ||
-      any(!is.finite(sizes)) || any(sizes < 1L) ||
-      any(!is.finite(taus)) || any(taus <= 0 | taus >= 1)) {
-    stop("Invalid population-target arguments.")
-  }
   previous <- NULL
   # Refine the quadrature until the treatment contrast stabilizes.
   for (n_nodes in c(64L, 128L, 256L, 512L)) {

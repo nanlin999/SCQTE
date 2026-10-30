@@ -60,12 +60,4 @@ distribution, not by substituting the conditional coefficient. The one-round
 unconditional algorithm uses bandwidth `0.05`; the two-round and other smoothed
 fits use `((2 + log(n))/n)^0.4`.
 
-## Verify
-
-```sh
-Rscript tests/test_public_code.R
-```
-
-The tests check estimates, interval limits, population targets, and convergence
-reporting for normal, Pareto, covariate-shift, and unequal-size settings.
 Generated CSV files under `results/` are ignored by Git.

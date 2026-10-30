@@ -3,9 +3,6 @@ scqte_unconditional <- function(data, sizes, tau,
                                 h_two_round = scqte_bandwidth(nrow(data)),
                                 h_one_round = 0.05,
                                 compute_intervals = TRUE) {
-  scqte_validate(data, sizes, tau)
-  if (!is.finite(h_two_round) || h_two_round <= 0 ||
-      !is.finite(h_one_round) || h_one_round <= 0) stop("Bandwidths must be positive.")
   X <- cbind(1, data$x1, data$x2)
   A <- data$A
   Y <- data$Y

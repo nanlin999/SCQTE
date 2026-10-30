@@ -9,17 +9,6 @@ scqte_reverse_sites <- function(data, sizes) {
 # Generate one outcome-model dataset with contiguous, user-specified sites.
 scqte_scenario <- function(sizes, error = "normal", covariates = "uniform",
                            seed = 667L, reverse_sites = FALSE) {
-  if (!is.numeric(sizes) || length(sizes) < 2L ||
-      any(!is.finite(sizes)) || any(sizes < 1L) ||
-      any(sizes != as.integer(sizes)) ||
-      !error %in% c("normal", "pareto") ||
-      !covariates %in% c("uniform", "shift") ||
-      length(seed) != 1L || !is.finite(seed) ||
-      seed < 0L || seed != as.integer(seed) ||
-      length(reverse_sites) != 1L || is.na(reverse_sites) ||
-      !is.logical(reverse_sites)) {
-    stop("Invalid simulation parameters.")
-  }
   sizes <- as.integer(sizes)
   n <- sum(sizes)
   set.seed(as.integer(seed))
