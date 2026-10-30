@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-# One selected design per invocation; no publication-wide batch is hard-coded.
+# Run a selected simulation design and write method-level results.
 arguments <- commandArgs(trailingOnly = TRUE)
 option <- function(name, default) {
   hit <- which(arguments == name)

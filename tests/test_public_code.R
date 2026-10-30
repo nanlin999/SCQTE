@@ -23,7 +23,7 @@ check_fit <- function(fit, expected) {
   assert_close(actual[names(expected)], expected)
 }
 
-# Frozen values come from the vetted 100-replication runs, not from this driver.
+# Reference values for the supported example designs.
 equal_normal <- scqte_scenario("equal", "normal", 20L, "equal", 1L)
 stopifnot(sum(equal_normal$sizes) == 10000L)
 conditional <- scqte_conditional(equal_normal$data, equal_normal$sizes, 0.1)
