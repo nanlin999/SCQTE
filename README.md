@@ -19,35 +19,39 @@ the setting is restored after compilation.
 
 ## Run an example
 
-From this repository's root directory:
+From this repository's root directory, run `--help` to see all options. For
+example, to generate 10,000 observations split among 20 equal-size sites:
 
 ```sh
-Rscript examples/run_scenario.R --design equal --error normal --sites 20 --taus 0.1,0.5,0.9 --output results/equal_normal.csv
+Rscript examples/run_scenario.R --n 10000 --sites 20 --covariates uniform --error normal --taus 0.1,0.5,0.9 --seed 667 --replications 1 --intervals true --output results/equal_normal.csv
 ```
 
 The default is one equal-site, normal-error replication at quantile level 0.1.
-Use `--first-replication 1 --replications 100` to run 100 replications of the
-*selected* scenario. Each output row identifies the design, method, estimand,
-replication, quantile level, estimate, population target, absolute error, and
-whether the numerical fit converged. Equal-site designs also report interval
-limits and coverage for the methods with intervals. Check the `converged` column
-before summarizing results.
+Use `--replications 100` to run 100 successive seeds starting at `--seed`.
+For unequal sites, replace `--n` and `--sites` with `--site-sizes`; for example,
+`60x100,40x100` means 100 sites of size 60 followed by 100 of size 40.
+`--reverse-sites true` reverses complete site blocks after generating data.
+Intervals are optional because they add computation; request them with
+`--intervals true`.
+
+Each output row identifies the covariate model, error model, site sizes, seed,
+method, estimand, replication, quantile level, estimate, population target,
+absolute error, convergence status, and, when requested, interval limits and
+coverage. Check the `converged` column before summarizing results.
 
 Other scenario examples:
 
 ```sh
-Rscript examples/run_scenario.R --design equal --error pareto --sites 50 --taus 0.9 --output results/equal_pareto.csv
-Rscript examples/run_scenario.R --design shift --error normal --sites 20 --taus 0.1 --output results/covariate_shift.csv
-Rscript examples/run_scenario.R --design unequal --error normal --sites 200 --pattern 30-70 --taus 0.1 --output results/unequal_30-70.csv
+Rscript examples/run_scenario.R --n 10000 --sites 50 --covariates uniform --error pareto --seed 100667 --taus 0.9 --intervals true --output results/equal_pareto.csv
+Rscript examples/run_scenario.R --n 10000 --sites 20 --covariates shift --error normal --seed 200667 --taus 0.1 --output results/covariate_shift.csv
+Rscript examples/run_scenario.R --site-sizes 70x100,30x100 --reverse-sites true --covariates uniform --error normal --seed 667 --taus 0.1 --output results/unequal_30-70.csv
 ```
 
-The unequal-site patterns are `50-50`, `60-40`, `70-30`, `40-60`, and `30-70`.
-The covariate-shift and unequal-site examples mirror their respective study
-designs and do not calculate intervals. The outcome model is
+The covariate-shift option generates site-specific beta-distributed covariates.
+The outcome model is
 `Y = 1 + A + X1 + X2 + (1 + X1 + 1.5 A) epsilon` throughout. For the equal-site
-design, `X1` and `X2` are independent uniform variables on `[0,1]` and `[0,2]`;
-the covariate-shift design uses site-specific beta distributions. The Pareto
-error is positive by construction.
+uniform-covariate example, `X1` and `X2` are independent uniform variables on
+`[0,1]` and `[0,2]`. The Pareto error is positive by construction.
 
 The conditional population effect is `1 + 1.5 q_epsilon(tau)`. The marginal
 effect is the contrast between the two *marginal potential-outcome quantiles*;

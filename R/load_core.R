@@ -1,3 +1,4 @@
+# Compile and expose the C++ optimization routines to the R example.
 scqte_load_core <- function(root = ".",
                             macos_linker_fix = Sys.info()[["sysname"]] == "Darwin") {
   for (package in c("Rcpp", "RcppArmadillo", "quantreg")) {
@@ -8,6 +9,8 @@ scqte_load_core <- function(root = ".",
   cpp <- file.path(root, "src", "scqte_core.cpp")
   if (!file.exists(cpp)) stop("Cannot find ", cpp)
   if (macos_linker_fix) {
+    # A temporary Makevars avoids stale macOS Fortran linker paths while
+    # preserving the user's compiler settings outside this compilation.
     previous <- Sys.getenv("R_MAKEVARS_USER", unset = NA_character_)
     existing <- if (is.na(previous)) path.expand("~/.R/Makevars") else previous
     temporary <- tempfile("scqte-Makevars-")
@@ -24,7 +27,9 @@ scqte_load_core <- function(root = ".",
   invisible(cpp)
 }
 
+# Check the input contract shared by the conditional and marginal estimators.
 scqte_validate <- function(data, sizes, tau) {
+  # Rows must be grouped by site in the same order as the sizes vector.
   if (!is.data.frame(data) || !all(c("x1", "x2", "A", "Y") %in% names(data))) {
     stop("data must contain x1, x2, A, and Y columns.")
   }
@@ -44,9 +49,11 @@ scqte_validate <- function(data, sizes, tau) {
   invisible(TRUE)
 }
 
+# Smoothing bandwidth used for the pooled and two-round fits.
 scqte_bandwidth <- function(n, p = 2L) ((p + log(n)) / n)^0.4
 
 scqte_interval <- function(X, Y, coefficient, tau, h, index) {
+  # Return only the coefficient interval for the requested estimand.
   limits <- asymptoticCI(X, drop(Y - X %*% coefficient), coefficient,
                          tau, nrow(X), h, qnorm(0.975))
   unname(limits[index, ])
@@ -54,6 +61,7 @@ scqte_interval <- function(X, Y, coefficient, tau, h, index) {
 
 scqte_result <- function(method, estimate, limits = c(NA_real_, NA_real_),
                          final_iterations = NA_integer_) {
+  # The C++ solvers report 5001 iterations when the 5000-step limit is hit.
   data.frame(method = method, estimate = unname(estimate),
              lower = limits[1L], upper = limits[2L],
              final_iterations = final_iterations,

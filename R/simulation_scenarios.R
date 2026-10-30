@@ -1,74 +1,50 @@
-scqte_draw_equal <- function(n, error, seed) {
-  set.seed(seed)
-  x1 <- runif(n)
-  x2 <- runif(n, 0, 2)
-  A <- rbinom(n, 1, plogis(-0.5 + 0.5 * x1 + 0.5 * x2))
-  epsilon <- if (error == "normal") rnorm(n) else runif(n)^(-1 / 5)
-  data.frame(x1 = x1, x2 = x2, A = A,
-             Y = 1 + A + x1 + x2 + (1 + x1 + 1.5 * A) * epsilon)
-}
-
-scqte_draw_shift <- function(n, seed) {
-  set.seed(seed)
-  sites <- 20L
-  per_site <- n / sites
-  t <- seq(0, 1, length.out = sites)
-  x1 <- unlist(lapply(t, function(v) rbeta(per_site, 1 + 4 * v, 5 - 4 * v)),
-               use.names = FALSE)
-  x2 <- 2 * unlist(lapply(t, function(v) rbeta(per_site, 5 - 4 * v, 1 + 4 * v)),
-                   use.names = FALSE)
-  A <- rbinom(n, 1, plogis(-0.5 + 0.5 * x1 + 0.5 * x2))
-  epsilon <- rnorm(n)
-  data.frame(x1 = x1, x2 = x2, A = A,
-             Y = 1 + A + x1 + x2 + (1 + x1 + 1.5 * A) * epsilon)
-}
-
-scqte_reverse_blocks <- function(data, sizes) {
+# Reorder complete site blocks when comparing different arrival orders.
+scqte_reverse_sites <- function(data, sizes) {
   ends <- cumsum(sizes)
   starts <- c(1L, head(ends, -1L) + 1L)
-  order <- unlist(rev(Map(seq.int, starts, ends)), use.names = FALSE)
-  data[order, , drop = FALSE]
+  rows <- unlist(rev(Map(seq.int, starts, ends)), use.names = FALSE)
+  list(data = data[rows, , drop = FALSE], sizes = rev(sizes))
 }
 
-scqte_scenario <- function(design = "equal", error = "normal", sites = 20L,
-                           pattern = "equal", replication = 1L, n = 10000L) {
-  if (!design %in% c("equal", "shift", "unequal") ||
+# Generate one outcome-model dataset with contiguous, user-specified sites.
+scqte_scenario <- function(sizes, error = "normal", covariates = "uniform",
+                           seed = 667L, reverse_sites = FALSE) {
+  if (!is.numeric(sizes) || length(sizes) < 2L ||
+      any(!is.finite(sizes)) || any(sizes < 1L) ||
+      any(sizes != as.integer(sizes)) ||
       !error %in% c("normal", "pareto") ||
-      length(replication) != 1L || replication < 1L ||
-      replication != as.integer(replication) ||
-      length(n) != 1L || n < 1L || n != as.integer(n)) {
-    stop("Invalid scenario argument.")
+      !covariates %in% c("uniform", "shift") ||
+      length(seed) != 1L || !is.finite(seed) ||
+      seed < 0L || seed != as.integer(seed) ||
+      length(reverse_sites) != 1L || is.na(reverse_sites) ||
+      !is.logical(reverse_sites)) {
+    stop("Invalid simulation parameters.")
   }
-  sites <- as.integer(sites)
-  replication <- as.integer(replication)
-  if (design == "equal") {
-    if (pattern != "equal" || sites < 2L || n %% sites != 0L) {
-      stop("Equal-site design requires pattern='equal' and n divisible by sites.")
-    }
-    seed <- if (error == "normal") 666L + replication else 100666L + replication
-    data <- scqte_draw_equal(n, error, seed)
-    sizes <- rep(n / sites, sites)
-  } else if (design == "shift") {
-    if (error != "normal" || pattern != "equal" || sites != 20L || n %% sites != 0L) {
-      stop("The published covariate-shift design uses normal error and 20 equal sites.")
-    }
-    data <- scqte_draw_shift(n, 200666L + replication)
-    sizes <- rep(n / sites, sites)
+  sizes <- as.integer(sizes)
+  n <- sum(sizes)
+  set.seed(as.integer(seed))
+
+  if (covariates == "uniform") {
+    x1 <- runif(n)
+    x2 <- runif(n, 0, 2)
   } else {
-    if (error != "normal" || sites != 200L || n != 10000L ||
-        !pattern %in% c("50-50", "60-40", "70-30", "40-60", "30-70")) {
-      stop("The published unequal-site design uses normal error, n=10000, M=200, and a listed pattern.")
-    }
-    data <- scqte_draw_equal(n, "normal", 666L + replication)
-    base_pattern <- switch(pattern, `40-60` = "60-40", `30-70` = "70-30", pattern)
-    first <- as.integer(sub("-.*", "", base_pattern))
-    second <- as.integer(sub(".*-", "", base_pattern))
-    sizes <- c(rep(first, 100L), rep(second, 100L))
-    if (pattern %in% c("40-60", "30-70")) {
-      data <- scqte_reverse_blocks(data, sizes)
-      sizes <- rev(sizes)
-    }
+    # Site-specific beta distributions produce covariate shift across sites.
+    position <- seq(0, 1, length.out = length(sizes))
+    x1 <- unlist(Map(function(m, t) rbeta(m, 1 + 4 * t, 5 - 4 * t),
+                     sizes, position), use.names = FALSE)
+    x2 <- 2 * unlist(Map(function(m, t) rbeta(m, 5 - 4 * t, 1 + 4 * t),
+                         sizes, position), use.names = FALSE)
   }
-  list(data = data, sizes = as.integer(sizes), design = design,
-       error = error, sites = sites, pattern = pattern, replication = replication)
+  A <- rbinom(n, 1, plogis(-0.5 + 0.5 * x1 + 0.5 * x2))
+  epsilon <- if (error == "normal") rnorm(n) else runif(n)^(-1 / 5)
+  data <- data.frame(x1 = x1, x2 = x2, A = A,
+                     Y = 1 + A + x1 + x2 + (1 + x1 + 1.5 * A) * epsilon)
+
+  if (reverse_sites) {
+    # Reverse complete site blocks, leaving observations within each block intact.
+    ordered <- scqte_reverse_sites(data, sizes)
+    data <- ordered$data
+    sizes <- ordered$sizes
+  }
+  list(data = data, sizes = sizes)
 }

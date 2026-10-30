@@ -1,3 +1,4 @@
+# Gauss-Legendre nodes and weights on [0, 1] for covariate integration.
 scqte_quadrature <- function(n) {
   k <- seq_len(n - 1L)
   off_diagonal <- k / sqrt(4 * k^2 - 1)
@@ -10,14 +11,17 @@ scqte_quadrature <- function(n) {
        weights = eig$vectors[1L, indices]^2)
 }
 
-scqte_truth_at_nodes <- function(design, error, sites, taus, n_nodes) {
+# Evaluate each marginal potential-outcome CDF on a fixed quadrature grid.
+scqte_truth_at_nodes <- function(covariates, error, sizes, taus, n_nodes) {
   quadrature <- scqte_quadrature(n_nodes)
   u <- quadrature$nodes
-  if (design == "shift") {
-    t <- seq(0, 1, length.out = sites)
+  if (covariates == "shift") {
+    # Average the site-specific joint densities using their population shares.
+    t <- seq(0, 1, length.out = length(sizes))
     density1 <- vapply(t, function(v) dbeta(u, 1 + 4 * v, 5 - 4 * v), numeric(n_nodes))
     density2 <- vapply(t, function(v) dbeta(u, 5 - 4 * v, 1 + 4 * v), numeric(n_nodes))
-    joint_density <- tcrossprod(density1, density2) / sites
+    joint_density <- tcrossprod(sweep(density1, 2L, sizes / sum(sizes), `*`),
+                               density2)
   } else {
     joint_density <- matrix(1, n_nodes, n_nodes)
   }
@@ -29,6 +33,7 @@ scqte_truth_at_nodes <- function(design, error, sites, taus, n_nodes) {
   for (a in 0:1) {
     location <- 1 + a + x1 + x2
     scale <- 1 + x1 + 1.5 * a
+    # Integrate the conditional outcome CDF to get each marginal CDF.
     cdf <- function(q) {
       standardized <- (q - location) / scale
       if (error == "normal") {
@@ -41,6 +46,7 @@ scqte_truth_at_nodes <- function(design, error, sites, taus, n_nodes) {
       sum(mass * probability)
     }
     for (j in seq_along(taus)) {
+      # Invert each marginal CDF separately, then take their difference.
       quantiles[j, a + 1L] <- uniroot(function(q) cdf(q) - taus[j],
                                       lower = -100, upper = 1000,
                                       tol = 1e-10)$root
@@ -49,16 +55,20 @@ scqte_truth_at_nodes <- function(design, error, sites, taus, n_nodes) {
   quantiles[, 2L] - quantiles[, 1L]
 }
 
-scqte_population_qte <- function(design, error, sites, taus,
+# Return the difference between the two marginal potential-outcome quantiles.
+scqte_population_qte <- function(covariates, error, sizes, taus,
                                   tolerance = 2e-6) {
-  if (!design %in% c("equal", "shift", "unequal") ||
+  if (!covariates %in% c("uniform", "shift") ||
       !error %in% c("normal", "pareto") ||
+      !is.numeric(sizes) || length(sizes) < 2L ||
+      any(!is.finite(sizes)) || any(sizes < 1L) ||
       any(!is.finite(taus)) || any(taus <= 0 | taus >= 1)) {
     stop("Invalid population-target arguments.")
   }
   previous <- NULL
+  # Refine the quadrature until the treatment contrast stabilizes.
   for (n_nodes in c(64L, 128L, 256L, 512L)) {
-    current <- scqte_truth_at_nodes(design, error, sites, taus, n_nodes)
+    current <- scqte_truth_at_nodes(covariates, error, sizes, taus, n_nodes)
     if (!is.null(previous) && max(abs(current - previous)) < tolerance) {
       return(current)
     }

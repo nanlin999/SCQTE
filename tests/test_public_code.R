@@ -24,7 +24,7 @@ check_fit <- function(fit, expected) {
 }
 
 # Reference values for the supported example designs.
-equal_normal <- scqte_scenario("equal", "normal", 20L, "equal", 1L)
+equal_normal <- scqte_scenario(rep(500L, 20L), "normal", "uniform", 667L)
 stopifnot(sum(equal_normal$sizes) == 10000L)
 conditional <- scqte_conditional(equal_normal$data, equal_normal$sizes, 0.1)
 unconditional <- scqte_unconditional(equal_normal$data, equal_normal$sizes, 0.1)
@@ -45,10 +45,10 @@ assert_close(unconditional$lower[unconditional$method == "SCQTE-1R"],
              -1.01683649084197)
 assert_close(unconditional$upper[unconditional$method == "SCQTE-1R"],
              -0.660387856711242)
-assert_close(scqte_population_qte("equal", "normal", 20L, 0.1),
+assert_close(scqte_population_qte("uniform", "normal", rep(500L, 20L), 0.1),
              -0.851324555137758, 2e-6)
 
-equal_pareto <- scqte_scenario("equal", "pareto", 50L, "equal", 1L)
+equal_pareto <- scqte_scenario(rep(200L, 50L), "pareto", "uniform", 100667L)
 conditional <- scqte_conditional(equal_pareto$data, equal_pareto$sizes, 0.9)
 unconditional <- scqte_unconditional(equal_pareto$data, equal_pareto$sizes, 0.9)
 check_fit(conditional, c(IP = 3.32885589145778,
@@ -60,10 +60,10 @@ check_fit(unconditional, c(IP = 3.03948429240956,
                            FedAvg = 3.09636389578865,
                            `SCQTE-1R` = 3.06611220735245,
                            `SCQTE-2R` = 3.04905614068988))
-assert_close(scqte_population_qte("equal", "pareto", 50L, 0.9),
+assert_close(scqte_population_qte("uniform", "pareto", rep(200L, 50L), 0.9),
              3.0857796051125, 2e-6)
 
-shift <- scqte_scenario("shift", "normal", 20L, "equal", 49L)
+shift <- scqte_scenario(rep(500L, 20L), "normal", "shift", 200715L)
 conditional <- scqte_conditional(shift$data, shift$sizes, 0.6,
                                   compute_intervals = FALSE)
 unconditional <- scqte_unconditional(shift$data, shift$sizes, 0.6,
@@ -82,7 +82,8 @@ stopifnot(identical(unstable$converged, FALSE),
           unstable$final_iterations == 5001L,
           all(is.na(unconditional$lower)))
 
-unequal <- scqte_scenario("unequal", "normal", 200L, "30-70", 1L)
+unequal <- scqte_scenario(c(rep(70L, 100L), rep(30L, 100L)),
+                          "normal", "uniform", 667L, reverse_sites = TRUE)
 stopifnot(length(unequal$sizes) == 200L,
           identical(unequal$sizes[1L], 30L),
           identical(unequal$sizes[200L], 70L))
