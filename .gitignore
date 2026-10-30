@@ -1,0 +1,7 @@
+results/
+.Rhistory
+.RData
+*.o
+*.so
+*.dylib
+.DS_Store
