@@ -56,8 +56,4 @@ uniform-covariate example, `X1` and `X2` are independent uniform variables on
 The conditional population effect is `1 + 1.5 q_epsilon(tau)`. The marginal
 effect is the contrast between the two *marginal potential-outcome quantiles*;
 it is computed by numerical integration over the specified covariate
-distribution, not by substituting the conditional coefficient. The one-round
-unconditional algorithm uses bandwidth `0.05`; the two-round and other smoothed
-fits use `((2 + log(n))/n)^0.4`.
-
-Generated CSV files under `results/` are ignored by Git.
+distribution, not by substituting the conditional coefficient. 
