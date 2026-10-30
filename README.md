@@ -1,8 +1,7 @@
-# SCQTE reproducibility code
+# sequential collaborative QTE estimation
 
 This repository provides the numerical routines used for sequential collaborative
-quantile treatment effect (SCQTE) estimation and a configurable example for one
-simulation scenario at a time. The C++ source in `src/scqte_core.cpp` contains
+quantile treatment effect (SCQTE) estimation. The C++ source in `src/scqte_core.cpp` contains
 the numerical optimization routines; the R files separate estimation,
 propensity-score updates, scenario generation, population targets, and benchmarks.
 
@@ -49,11 +48,7 @@ Rscript examples/run_scenario.R --site-sizes 70x100,30x100 --reverse-sites true 
 
 The covariate-shift option generates site-specific beta-distributed covariates.
 The outcome model is
-`Y = 1 + A + X1 + X2 + (1 + X1 + 1.5 A) epsilon` throughout. For the equal-site
+`Y = 1 + A + X1 + X2 + (1 + X1 + 1.5 A) epsilon`. For the equal-site
 uniform-covariate example, `X1` and `X2` are independent uniform variables on
-`[0,1]` and `[0,2]`. The Pareto error is positive by construction.
+`[0,1]` and `[0,2]`. 
 
-The conditional population effect is `1 + 1.5 q_epsilon(tau)`. The marginal
-effect is the contrast between the two *marginal potential-outcome quantiles*;
-it is computed by numerical integration over the specified covariate
-distribution, not by substituting the conditional coefficient. 
