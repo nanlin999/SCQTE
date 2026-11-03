@@ -50,5 +50,7 @@ The covariate-shift option generates site-specific beta-distributed covariates.
 The outcome model is
 `Y = 1 + A + X1 + X2 + (1 + X1 + 1.5 A) epsilon`. For the equal-site
 uniform-covariate example, `X1` and `X2` are independent uniform variables on
-`[0,1]` and `[0,2]`. 
+`[0,1]` and `[0,2]`.
 
+All smoothed fits, including both SCQTE variants, use
+`((2 + log(n))/n)^0.4` as the default bandwidth.

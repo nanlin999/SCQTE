@@ -21,7 +21,7 @@ scqte_load_core <- function(root = ".",
   invisible(cpp)
 }
 
-# Smoothing bandwidth used for the pooled and two-round fits.
+# Smoothing bandwidth used for the pooled and renewable fits.
 scqte_bandwidth <- function(n, p = 2L) ((p + log(n)) / n)^0.4
 
 scqte_interval <- function(X, Y, coefficient, tau, h, index) {

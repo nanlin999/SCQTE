@@ -1,7 +1,7 @@
 # Estimate the marginal QTE through inverse-propensity-weighted quantile fits.
 scqte_unconditional <- function(data, sizes, tau,
                                 h_two_round = scqte_bandwidth(nrow(data)),
-                                h_one_round = 0.05,
+                                h_one_round = scqte_bandwidth(nrow(data)),
                                 compute_intervals = TRUE) {
   X <- cbind(1, data$x1, data$x2)
   A <- data$A
