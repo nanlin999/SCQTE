@@ -57,10 +57,13 @@ scqte_truth_at_nodes <- function(covariates, error, sizes, taus, n_nodes) {
 
 # Return the difference between the two marginal potential-outcome quantiles.
 scqte_population_qte <- function(covariates, error, sizes, taus,
-                                  tolerance = 2e-6) {
+                                  tolerance = if (error == "pareto") 5e-5 else 2e-6) {
   previous <- NULL
   # Refine the quadrature until the treatment contrast stabilizes.
-  for (n_nodes in c(64L, 128L, 256L, 512L)) {
+  # The Pareto CDF has a kink at its support boundary, so use the full grid.
+  nodes <- if (error == "pareto") c(256L, 512L) else
+    c(64L, 128L, 256L, 512L)
+  for (n_nodes in nodes) {
     current <- scqte_truth_at_nodes(covariates, error, sizes, taus, n_nodes)
     if (!is.null(previous) && max(abs(current - previous)) < tolerance) {
       return(current)
