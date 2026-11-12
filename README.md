@@ -42,7 +42,7 @@ Other scenario examples:
 
 ```sh
 Rscript examples/run_scenario.R --n 10000 --sites 50 --covariates uniform --error pareto --seed 100667 --taus 0.9 --intervals true --output results/equal_pareto.csv
-Rscript examples/run_scenario.R --n 10000 --sites 20 --covariates shift --error normal --seed 200667 --taus 0.1 --output results/covariate_shift.csv
+Rscript examples/run_scenario.R --n 10000 --sites 50 --covariates shift --error normal --seed 200667 --taus 0.1 --output results/covariate_shift.csv
 Rscript examples/run_scenario.R --site-sizes 70x100,30x100 --reverse-sites true --covariates uniform --error normal --seed 667 --taus 0.1 --output results/unequal_30-70.csv
 ```
 
@@ -52,5 +52,9 @@ The outcome model is
 uniform-covariate example, `X1` and `X2` are independent uniform variables on
 `[0,1]` and `[0,2]`.
 
-All smoothed fits, including both SCQTE variants, use
-`((2 + log(n))/n)^0.4` as the default bandwidth.
+Conditional smoothed fits use `h0 = ((2 + log(n))/n)^0.4` by default.
+Unconditional smoothed fits use `2*h0`, accounting for the response scale of
+the inverse-propensity-weighted objective. Override either choice with
+`--h-conditional` or `--h-unconditional`. FedAvg uses no smoothing bandwidth;
+its unconditional analysis first aggregates local propensity fits using their
+Hessian matrices, then combines local weighted quantile fits.

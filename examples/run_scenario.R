@@ -14,6 +14,8 @@ usage <- paste(
   "  --replications N         Number of replications (default: 1)",
   "  --reverse-sites BOOL     Reverse complete site blocks (default: false)",
   "  --intervals BOOL         Compute confidence intervals (default: false)",
+  "  --h-conditional H        Conditional smoothing bandwidth (default: h0)",
+  "  --h-unconditional H      Unconditional smoothing bandwidth (default: 2h0)",
   "  --output FILE            Output CSV (default: results/example.csv)",
   "  --help                   Show these options",
   sep = "\n"
@@ -27,7 +29,7 @@ values <- arguments[seq_along(arguments) %% 2L == 0L]
 if (length(keys) != length(values)) stop("Options need values; see --help.")
 allowed <- paste0("--", c("n", "sites", "site-sizes", "covariates", "error",
                           "taus", "seed", "replications", "reverse-sites",
-                          "intervals", "output"))
+                          "intervals", "h-conditional", "h-unconditional", "output"))
 if (any(!keys %in% allowed)) stop("Unknown option; see --help.")
 options <- setNames(as.list(values), sub("^--", "", keys))
 option <- function(name, default) {
@@ -69,6 +71,12 @@ reverse_sites <- match.arg(option("reverse-sites", "false"),
                            c("true", "false")) == "true"
 compute_intervals <- match.arg(option("intervals", "false"),
                                c("true", "false")) == "true"
+h_conditional <- as.numeric(option("h-conditional", scqte_bandwidth(n)))
+h_unconditional <- as.numeric(option("h-unconditional", 2 * scqte_bandwidth(n)))
+if (!is.finite(h_conditional) || h_conditional <= 0 ||
+    !is.finite(h_unconditional) || h_unconditional <= 0) {
+  stop("Bandwidths must be positive finite numbers.")
+}
 output <- option("output", file.path(root, "results", "example.csv"))
 
 scqte_load_core(root)
@@ -86,8 +94,11 @@ for (replication in seq_len(replications)) {
     for (estimand in c("conditional", "unconditional")) {
       fit <- if (estimand == "conditional")
         scqte_conditional(scenario$data, scenario$sizes, tau,
+                          h = h_conditional,
                           compute_intervals = compute_intervals) else
         scqte_unconditional(scenario$data, scenario$sizes, tau,
+                            h_two_round = h_unconditional,
+                            h_one_round = h_unconditional,
                             compute_intervals = compute_intervals)
       truth <- if (estimand == "conditional") truth_conditional[j] else
         truth_unconditional[j]
@@ -101,6 +112,9 @@ for (replication in seq_len(replications)) {
       fit$replication <- replication
       fit$tau <- tau
       fit$estimand <- estimand
+      fit$bandwidth <- ifelse(fit$method %in% c("IP", "FedAvg"), NA_real_,
+                             if (estimand == "conditional") h_conditional else
+                               h_unconditional)
       fit$population_qte <- truth
       fit$absolute_error <- abs(fit$estimate - truth)
       fit$covered <- ifelse(is.finite(fit$lower) & is.finite(fit$upper),
@@ -112,7 +126,7 @@ for (replication in seq_len(replications)) {
 results <- do.call(rbind, rows)
 results <- results[c("covariates", "error", "n", "sites", "site_sizes",
                      "reverse_sites", "seed", "replication",
-                     "tau", "estimand", "method", "estimate", "population_qte",
+                     "tau", "estimand", "method", "bandwidth", "estimate", "population_qte",
                      "absolute_error", "lower", "upper", "covered",
                      "final_iterations", "converged")]
 dir.create(dirname(output), recursive = TRUE, showWarnings = FALSE)

@@ -18,3 +18,20 @@ scqte_renewable_propensity <- function(X, A, sizes) {
   # Sequential Newton update reuses accumulated site information.
   as.numeric(seqNewtoncpp(X, A, rep(0, ncol(X)), sizes))
 }
+
+# Ye's FedAvg benchmark combines local logistic fits with local information.
+scqte_fedavg_propensity <- function(X, A, sizes) {
+  hessian <- matrix(0, ncol(X), ncol(X))
+  rhs <- numeric(ncol(X))
+  ends <- cumsum(sizes)
+  starts <- c(1L, head(ends, -1L) + 1L)
+  for (site in seq_along(sizes)) {
+    rows <- seq.int(starts[site], ends[site])
+    Xi <- X[rows, , drop = FALSE]
+    beta <- Newtoncpp(Xi, A[rows], rep(0, ncol(X)))
+    Hi <- Loghess(Xi, beta)
+    hessian <- hessian + Hi
+    rhs <- rhs + drop(Hi %*% beta)
+  }
+  drop(solve(hessian, rhs))
+}
