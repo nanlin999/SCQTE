@@ -8,8 +8,7 @@ scqte_unconditional <- function(data, sizes, tau,
   X <- cbind(1, data$x1, data$x2)
   A <- data$A
   Y <- data$Y
-  # Central and renewable propensity fits define the corresponding IPW
-  # pseudo-data; the one-round routine estimates propensity internally.
+
   central_data <- scqte_weighted_data(X, A, Y,
                                       scqte_central_propensity(X, A))
   renewable_gamma <- scqte_renewable_propensity(X, A, sizes)
@@ -27,8 +26,6 @@ scqte_unconditional <- function(data, sizes, tau,
   one_round <- seqSQRcppW1R(X, A, Y, sizes, rep(0, ncol(X)),
                              tau = tau, h = h_one_round)
 
-  # Column 2 of the weighted design is the marginal treatment contrast.
-  # The one-round and centralized intervals retain the pooled calculation.
   interval <- function(coefficient, bandwidth) if (compute_intervals)
     scqte_interval(central_data$X, central_data$Y, coefficient,
                    tau, bandwidth, 2L) else c(NA_real_, NA_real_)
