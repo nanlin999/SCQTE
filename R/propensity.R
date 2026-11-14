@@ -19,7 +19,6 @@ scqte_renewable_propensity <- function(X, A, sizes) {
   as.numeric(seqNewtoncpp(X, A, rep(0, ncol(X)), sizes))
 }
 
-# Ye's FedAvg benchmark combines local logistic fits with local information.
 scqte_fedavg_propensity <- function(X, A, sizes) {
   hessian <- matrix(0, ncol(X), ncol(X))
   rhs <- numeric(ncol(X))
