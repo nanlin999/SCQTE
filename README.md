@@ -54,7 +54,4 @@ uniform-covariate example, `X1` and `X2` are independent uniform variables on
 
 Conditional smoothed fits use `h0 = ((2 + log(n))/n)^0.4` by default.
 Unconditional smoothed fits use `2*h0`, accounting for the response scale of
-the inverse-propensity-weighted objective. Override either choice with
-`--h-conditional` or `--h-unconditional`. FedAvg uses no smoothing bandwidth;
-its unconditional analysis first aggregates local propensity fits using their
-Hessian matrices, then combines local weighted quantile fits.
+the inverse-propensity-weighted objective. 
