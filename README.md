@@ -32,11 +32,6 @@ For unequal sites, replace `--n` and `--sites` with `--site-sizes`; for example,
 `--reverse-sites true` reverses complete site blocks after generating data.
 Intervals are optional because they add computation; request them with
 `--intervals true`.
-Unconditional SCQTE-2R intervals use the joint propensity-score and
-smoothed-quantile sandwich evaluated at site-current quantile estimates.
-Use `--two-round-inference fixed_weight` to reproduce the earlier
-fixed-weight interval calculation. SCQTE-1R retains its original
-fixed-weight interval calculation.
 
 Each output row identifies the covariate model, error model, site sizes, seed,
 method, estimand, replication, quantile level, estimate, population target,
