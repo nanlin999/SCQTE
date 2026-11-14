@@ -1,5 +1,4 @@
 # Aggregate local quantile-regression coefficients using site Gram matrices.
-# This is a comparison method; it does not perform renewable score updates.
 scqte_fedavg <- function(X, Y, sizes, tau) {
   hessian <- matrix(0, ncol(X), ncol(X))
   rhs <- numeric(ncol(X))
