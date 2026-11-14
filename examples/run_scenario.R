@@ -14,6 +14,7 @@ usage <- paste(
   "  --replications N         Number of replications (default: 1)",
   "  --reverse-sites BOOL     Reverse complete site blocks (default: false)",
   "  --intervals BOOL         Compute confidence intervals (default: false)",
+  "  --two-round-inference TYPE  joint_site or fixed_weight (default: joint_site)",
   "  --h-conditional H        Conditional smoothing bandwidth (default: h0)",
   "  --h-unconditional H      Unconditional smoothing bandwidth (default: 2h0)",
   "  --output FILE            Output CSV (default: results/example.csv)",
@@ -29,7 +30,8 @@ values <- arguments[seq_along(arguments) %% 2L == 0L]
 if (length(keys) != length(values)) stop("Options need values; see --help.")
 allowed <- paste0("--", c("n", "sites", "site-sizes", "covariates", "error",
                           "taus", "seed", "replications", "reverse-sites",
-                          "intervals", "h-conditional", "h-unconditional", "output"))
+                          "intervals", "two-round-inference", "h-conditional",
+                          "h-unconditional", "output"))
 if (any(!keys %in% allowed)) stop("Unknown option; see --help.")
 options <- setNames(as.list(values), sub("^--", "", keys))
 option <- function(name, default) {
@@ -44,7 +46,7 @@ parse_sizes <- function(specification) {
 script_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
 if (length(script_arg) != 1L) stop("Run this file with Rscript.")
 root <- normalizePath(file.path(dirname(sub("^--file=", "", script_arg)), ".."))
-for (file in c("load_core.R", "benchmarks.R", "propensity.R",
+for (file in c("load_core.R", "benchmarks.R", "propensity.R", "inference.R",
                "conditional_qte.R", "unconditional_qte.R",
                "simulation_scenarios.R", "population_targets.R")) {
   source(file.path(root, "R", file))
@@ -71,6 +73,8 @@ reverse_sites <- match.arg(option("reverse-sites", "false"),
                            c("true", "false")) == "true"
 compute_intervals <- match.arg(option("intervals", "false"),
                                c("true", "false")) == "true"
+two_round_inference <- match.arg(option("two-round-inference", "joint_site"),
+                                 c("joint_site", "fixed_weight"))
 h_conditional <- as.numeric(option("h-conditional", scqte_bandwidth(n)))
 h_unconditional <- as.numeric(option("h-unconditional", 2 * scqte_bandwidth(n)))
 if (!is.finite(h_conditional) || h_conditional <= 0 ||
@@ -99,7 +103,8 @@ for (replication in seq_len(replications)) {
         scqte_unconditional(scenario$data, scenario$sizes, tau,
                             h_two_round = h_unconditional,
                             h_one_round = h_unconditional,
-                            compute_intervals = compute_intervals)
+                            compute_intervals = compute_intervals,
+                            two_round_inference = two_round_inference)
       truth <- if (estimand == "conditional") truth_conditional[j] else
         truth_unconditional[j]
       fit$covariates <- covariates
@@ -115,6 +120,14 @@ for (replication in seq_len(replications)) {
       fit$bandwidth <- ifelse(fit$method %in% c("IP", "FedAvg"), NA_real_,
                              if (estimand == "conditional") h_conditional else
                                h_unconditional)
+      fit$interval_method <- NA_character_
+      if (compute_intervals) {
+        eligible <- !fit$method %in% c("IP", "FedAvg")
+        fit$interval_method[eligible] <- if (estimand == "conditional")
+          "fixed_design" else "fixed_weight"
+        if (estimand == "unconditional")
+          fit$interval_method[fit$method == "SCQTE-2R"] <- two_round_inference
+      }
       fit$population_qte <- truth
       fit$absolute_error <- abs(fit$estimate - truth)
       fit$covered <- ifelse(is.finite(fit$lower) & is.finite(fit$upper),
@@ -126,7 +139,8 @@ for (replication in seq_len(replications)) {
 results <- do.call(rbind, rows)
 results <- results[c("covariates", "error", "n", "sites", "site_sizes",
                      "reverse_sites", "seed", "replication",
-                     "tau", "estimand", "method", "bandwidth", "estimate", "population_qte",
+                     "tau", "estimand", "method", "bandwidth", "interval_method",
+                     "estimate", "population_qte",
                      "absolute_error", "lower", "upper", "covered",
                      "final_iterations", "converged")]
 dir.create(dirname(output), recursive = TRUE, showWarnings = FALSE)
